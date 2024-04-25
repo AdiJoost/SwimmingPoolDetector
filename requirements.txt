@@ -1,0 +1,5 @@
+flask
+pillow
+opencv-python
+requests
+pyproj
