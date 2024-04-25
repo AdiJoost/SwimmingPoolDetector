@@ -1,0 +1,3 @@
+[submodule "swissimage_annotator"]
+	path = swissimage_annotator
+	url = https://github.com/sudoale/swissimage_annotator.git
