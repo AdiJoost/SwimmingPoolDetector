@@ -5,3 +5,5 @@ requests
 pyproj
 matplotlib
 tensorflow
+keras
+scikit-learn

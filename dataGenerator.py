@@ -2,15 +2,24 @@ import numpy as np
 import cv2
 import os
 
+def main():
+    print(getNumberOfYPictures());
+
+def getNumberOfYPictures():
+    for root, dirs, files in os.walk("./swissimage_annotator/static/data/swimmingpooldetector/y", topdown=False):
+        return len(files)
+
 def generateEqualDataSet(numberOfDataPoints: int):
     positiveGenerator = _getPathToPositivePicture()
     negativeGenerator = _getPathToNegativePicture()
-    dataSet = []
+    X = []
+    y = []
     for _ in range(numberOfDataPoints + 1):
-        dataSet.append((_getPicture(positiveGenerator), 1))
-        dataSet.append((_getPicture(negativeGenerator), 0))
-    np.random.shuffle(dataSet)
-    return dataSet
+        X.append(_getPicture(positiveGenerator))
+        y.append(1)
+        X.append(_getPicture(negativeGenerator))
+        y.append(0)
+    return np.asarray(X), np.asarray(y)
 
 def _getPathToPositivePicture():
     for root, dirs, files in os.walk("./swissimage_annotator/static/data/swimmingpooldetector/y", topdown=False):
@@ -30,3 +39,6 @@ def _getPicture(generator):
     picture = _loadAndPreparePictureFromPath(generator.__next__())
     picture = picture / 255
     return picture
+
+if __name__ == "__main__":
+    main()
