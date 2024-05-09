@@ -1,6 +1,6 @@
 flask
 pillow
-opencv-python
+opencv
 requests
 pyproj
 matplotlib
