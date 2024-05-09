@@ -1,5 +1,5 @@
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, RandomFlip, RandomRotation
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.model_selection import train_test_split
 from dataGenerator import generateEqualDataSet
@@ -22,6 +22,11 @@ def main():
 
 def getModel():
     model = Sequential();
+    data_augmentation = Sequential([
+        RandomFlip("horizontal_and_vertical"),
+        RandomRotation(0.2),
+        ])
+    model.add(data_augmentation)
     model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(500, 500, 3)))
     model.add(MaxPooling2D((2, 2)))
 
