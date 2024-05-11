@@ -6,14 +6,16 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.model_selection import train_test_split
 from dataGenerator import generateEqualDataSet
 from tensorflow.keras.applications.vgg16 import VGG16
+from keras.preprocessing.image import ImageDataGenerator
 import pickle
 
 NUMBER_OF_PICTURES = 114
-VALIDATION_SPLIT = 0.2
+
+NODES_AFTER_BASE_MODEL = 64
 
 BATCH_SIZE = 6
 EPOCHS = 2
-CALLBACK = [ModelCheckpoint("vgg16.h5", monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')]
+CALLBACK = [ModelCheckpoint("vgg16.h5", monitor='accuracy', verbose=1, save_best_only=True, mode='max'),]
 METRICS =["accuracy"]
 
 #Optimizer
@@ -22,10 +24,21 @@ DECAY_STEPS = 1000
 DECAY_RATE = 0.99
 DECAY_STAIRCASE = True
 
+#CALLBACKS / NOT IMPLEMENTED
+PATIENCE = 10
+
+#Datagen
+ROTATION_RANGE = 40,
+WIDTH_SHIFT_RANGE = 50,
+HEIGTH_SHIFT_RANGE = 50,
+HORIZONTAL_FLIP = True,
+VERTICAL_FLIP = True
+
 def main():
     model = getModel()
     xTrain, xTest, yTrain, ytest = getData(NUMBER_OF_PICTURES)
-    history = trainModel(model, xTrain, yTrain, batchSize=BATCH_SIZE, epochs=EPOCHS, validationSplit=VALIDATION_SPLIT, callback=CALLBACK)
+    datagen = getDataGenerator(xTrain)
+    history = trainModel(model, xTrain, yTrain, datagen, batchSize=BATCH_SIZE, epochs=EPOCHS, callback=CALLBACK)
     score = evaluateModel(model, xTest, ytest)
     saveModel(model, "lastModel.h5", history, score)
 
@@ -37,7 +50,7 @@ def getModel():
     model = Sequential([
         baseModel,
         Flatten(),
-        Dense(256, activation='relu'),
+        Dense(NODES_AFTER_BASE_MODEL, activation='relu'),
         Dense(1, activation='sigmoid')
     ])
 
@@ -66,13 +79,23 @@ def getData(numberOfSamples):
     xTrain, xTest, yTrain, ytest = train_test_split(X, y, test_size=0.2)
     return xTrain, xTest, yTrain, ytest
 
-def trainModel(model, xTrain, yTrain, batchSize, epochs, validationSplit, callback=None):
-    history = model.fit(xTrain,
-        yTrain,
-        batch_size=batchSize,
+def getDataGenerator(xTrain):
+    datagen = ImageDataGenerator(
+        rotation_range=ROTATION_RANGE,
+        width_shift_range=WIDTH_SHIFT_RANGE,
+        height_shift_range=HEIGTH_SHIFT_RANGE,
+        horizontal_flip=HORIZONTAL_FLIP,
+        vertical_flip=VERTICAL_FLIP
+    )
+    datagen.fit(xTrain)
+    return datagen
+
+def trainModel(model, xTrain, yTrain, datagen, batchSize, epochs, callback=None):
+    history = model.fit(
+        datagen.flow(xTrain, yTrain, batch_size=batchSize),
+        steps_per_epoch= len(xTrain) / batchSize,
         epochs=epochs,
-        validation_split=validationSplit,
-        callbacks=callback,)
+        callbacks=callback)
     return history
 
 def evaluateModel(model, xTest, yTest):
