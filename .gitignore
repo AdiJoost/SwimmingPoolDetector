@@ -163,3 +163,4 @@ cython_debug/
 metaData.json
 modelHistory.pkl
 myModel.keras
+*.h5
