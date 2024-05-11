@@ -3,6 +3,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Random
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.model_selection import train_test_split
 from dataGenerator import generateEqualDataSet
+from tensorflow.keras.applications.vgg16 import VGG16
 import pickle
 
 NUMBER_OF_PICTURES = 100
@@ -27,7 +28,11 @@ def getModel():
         RandomRotation(0.2),
         ])
     model.add(data_augmentation)
-    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(500, 500, 3)))
+    model.add(VGG16(
+        include_top=False,
+        input_shape=(500,500,3)
+    ))
+    model.add(Conv2D(32, (3, 3), activation='relu'))
     model.add(MaxPooling2D((2, 2)))
 
     model.add(Conv2D(64, (3, 3), activation='relu'))
