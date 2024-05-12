@@ -165,3 +165,4 @@ modelHistory.pkl
 myModel.keras
 *.h5
 predictedData/*.png
+predictedData/temps/*
