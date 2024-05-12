@@ -1,5 +1,6 @@
 import requests
 import json
+import logging
 
 from pathlib import Path
 import os
@@ -11,24 +12,59 @@ from swissimage_annotator.src.helpers import convert_coordinates
 import matplotlib.pyplot as plt
 import cv2
 
+logger = logging.getLogger(__name__)
+
 BASE_URL = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swissimage-dop10/items"
 DATA_DIR = Path("predictedData")
 
 def main():
+    logging.basicConfig(filename='myapp.log', level=logging.INFO)
     download_tif(2752000, 2753000, 1212000, 1213000, crs=2056)
     for root, directories, files in os.walk("predictedData/temps"):
         for filename in files:
             filePath = os.path.join(root, filename)
             cutAndRemoveFile(filePath, f"filename")
         
+def gatherImages():
+    logging.basicConfig(filename='myapp.log', level=logging.INFO)
+    validateFolders()
+    logger.info("started")
+    getImage(2752, 1212)
+
+def validateFolders():
+    predictedData = os.path.join(os.getcwd(), "predictedData")
+    if not os.path.exists(predictedData):
+        logging.info(f"Creating Directory: {predictedData}")
+        os.makedirs(predictedData)
+    temps = os.path.join(predictedData, "temps")
+    if not os.path.exists(temps):
+        logging.info(f"Creating Directory: {temps}")
+        os.makedirs(temps)
+
+def getImage(x, y):
+    logging.info(f"Get Image of {x}, {y}")
+    download_tif(x * 1000, (x+1) * 1000, y * 1000, (y+1) * 1000, crs=2056)
+    for root, directories, files in os.walk(os.path.join("predictedData", "temps")):
+        for filename in files:
+            if (filename == "stub.txt"):
+                #stub.txt is a dirty approach: Do mkdir...
+                continue
+            filePath = os.path.join(root, filename)
+            cutAndRemoveFile(filePath, f"filename")
+
 
 def cutAndRemoveFile(filepath, filename):
     image = cv2.imread(filepath)
-    cutImages(image, filename)
-    """try:
+    if type(image) != None: #WTF python please... -> This Error handling is probably not going to work
+        cutImages(image, filename)
+    else:
+        logging.critical(f"Got an empty file: {filepath}")
+        return
+    try:
+        logging.info(f"Remove: {filepath}")
         os.remove(filepath)
     except OSError as e:
-        print(f"Error: {filepath} - {e.strerror}")"""
+        logging.critical(f"Error: {filepath} - {e.strerror}")
 
 def download_tif(x_min=None, x_max=None, y_min=None, y_max=None, data_dir=None, crs=4326):
     if not data_dir:
@@ -86,4 +122,4 @@ def cutImages(image, prefix):
                 ret = cv2.imwrite(path, croppedImage)
 
 if __name__ == "__main__":
-    main()
+    gatherImages()
