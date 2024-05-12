@@ -18,17 +18,24 @@ BASE_URL = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swi
 DATA_DIR = Path("predictedData")
 
 def main():
-    for i in range(2752, 2754):
-        for j in range(1212, 1215):
-            gatherImages(i,j)
+    gatherImages(2752,2754, 1212, 1215)
         
-def gatherImages(x, y):
-    print(f"GetImage of: {x}, {y}")
-    validateFolders()
-    logger.info("started")
-    getImage(x, y)
+def gatherImages(fromX, toX, fromY, toY):
+    _configureLogger()
+    _validateFolders()
+    logger.info(f"started with: [{fromX}, {toX}], [{fromY}, {toY}]")
+    for x in range(fromX, toX):
+        for y in range(fromY, toY):
+            _getImage(x, y)
 
-def validateFolders():
+def _configureLogger():
+    logs = os.path.join(os.getcwd(), "logs")
+    if not os.path.exists(logs):
+        os.makedirs(logs)
+    logging.basicConfig(filename='logs/imageDownloader.log', level=logging.INFO)
+
+
+def _validateFolders():
     predictedData = os.path.join(os.getcwd(), "predictedData")
     if not os.path.exists(predictedData):
         logging.info(f"Creating Directory: {predictedData}")
@@ -38,19 +45,19 @@ def validateFolders():
         logging.info(f"Creating Directory: {temps}")
         os.makedirs(temps)
 
-def getImage(x, y):
+def _getImage(x, y):
     logging.info(f"Get Image of {x}, {y}")
-    download_tif(x * 1000, (x+1) * 1000, y * 1000, (y+1) * 1000, crs=2056)
+    _download_tif(x * 1000, (x+1) * 1000, y * 1000, (y+1) * 1000, crs=2056)
     for root, directories, files in os.walk(os.path.join("predictedData", "temps")):
         for filename in files:
             filePath = os.path.join(root, filename)
-            cutAndRemoveFile(filePath, f"filename")
+            _cutAndRemoveFile(filePath, f"filename")
 
 
-def cutAndRemoveFile(filepath, filename):
+def _cutAndRemoveFile(filepath, filename):
     image = cv2.imread(filepath)
-    if type(image) != None: #WTF python please... -> This Error handling is probably not going to work
-        cutImages(image, filename)
+    if type(image) != None: #This Error handling is probably not going to work
+        _cutImages(image, filename)
     else:
         logging.critical(f"Got an empty file: {filepath}")
         return
@@ -60,7 +67,7 @@ def cutAndRemoveFile(filepath, filename):
     except OSError as e:
         logging.critical(f"Error: {filepath} - {e.strerror}")
 
-def download_tif(x_min=None, x_max=None, y_min=None, y_max=None, data_dir=None, crs=4326):
+def _download_tif(x_min=None, x_max=None, y_min=None, y_max=None, data_dir=None, crs=4326):
     if not data_dir:
         data_dir = DATA_DIR
 
@@ -76,15 +83,15 @@ def download_tif(x_min=None, x_max=None, y_min=None, y_max=None, data_dir=None, 
         query += '?bbox=' + ','.join([str(x_min), str(y_min), str(x_max), str(y_max)])
 
     url = BASE_URL + query
-    response = retryCall(url)
+    response = _retryCall(url)
     data = json.loads(response.content.decode('utf-8'))
     for i, feature in enumerate(data['features']):
         asset = list(filter(lambda a: a['eo:gsd'] == 0.1, feature['assets'].values()))[0]
-        r = retryCall(asset['href'])
+        r = _retryCall(asset['href'])
         with open(f"predictedData/temps/temp_{i}", 'wb') as f:
             f.write(r.content)
 
-def retryCall(link, delay=1, trys=15):
+def _retryCall(link, delay=1, trys=15):
     headers = {
         'Content-Type': 'application/json',
         'accept': 'application/json',
@@ -94,12 +101,12 @@ def retryCall(link, delay=1, trys=15):
             response = requests.get(link, headers=headers)
             return response
         except:
-            print(f"Retry {link}")
+            logger.info(f"Retry {link}")
             time.sleep(delay)
-    print(f"Failed to load after {trys} trys:\n{link}")
+    logger.critical(f"Failed to load after {trys} trys:\n{link}")
 
-def cutImages(image, prefix):
-    print("cutting Image")
+def _cutImages(image, prefix):
+    logger.info(f"cutting Image: {prefix}")
     cuts_per_image = int(1000 / 50)
     image_width = image.shape[0]
     image_height = image.shape[1]
@@ -115,6 +122,8 @@ def cutImages(image, prefix):
                 timestamp = datetime.now().timestamp()
                 path = os.path.join("predictedData", f'{prefix}_{new_x}_{new_y}_{timestamp}.png')
                 ret = cv2.imwrite(path, croppedImage)
+                if not ret:
+                    logger.critical("Could not save image: {path}")
 
 if __name__ == "__main__":
     main()
