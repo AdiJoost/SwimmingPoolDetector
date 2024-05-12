@@ -18,18 +18,15 @@ BASE_URL = "https://data.geo.admin.ch/api/stac/v0.9/collections/ch.swisstopo.swi
 DATA_DIR = Path("predictedData")
 
 def main():
-    logging.basicConfig(filename='myapp.log', level=logging.INFO)
-    download_tif(2752000, 2753000, 1212000, 1213000, crs=2056)
-    for root, directories, files in os.walk("predictedData/temps"):
-        for filename in files:
-            filePath = os.path.join(root, filename)
-            cutAndRemoveFile(filePath, f"filename")
+    for i in range(2752, 2754):
+        for j in range(1212, 1215):
+            gatherImages(i,j)
         
-def gatherImages():
-    logging.basicConfig(filename='myapp.log', level=logging.INFO)
+def gatherImages(x, y):
+    print(f"GetImage of: {x}, {y}")
     validateFolders()
     logger.info("started")
-    getImage(2752, 1212)
+    getImage(x, y)
 
 def validateFolders():
     predictedData = os.path.join(os.getcwd(), "predictedData")
@@ -46,9 +43,6 @@ def getImage(x, y):
     download_tif(x * 1000, (x+1) * 1000, y * 1000, (y+1) * 1000, crs=2056)
     for root, directories, files in os.walk(os.path.join("predictedData", "temps")):
         for filename in files:
-            if (filename == "stub.txt"):
-                #stub.txt is a dirty approach: Do mkdir...
-                continue
             filePath = os.path.join(root, filename)
             cutAndRemoveFile(filePath, f"filename")
 
@@ -100,7 +94,7 @@ def retryCall(link, delay=1, trys=15):
             response = requests.get(link, headers=headers)
             return response
         except:
-            print("Retry")
+            print(f"Retry {link}")
             time.sleep(delay)
     print(f"Failed to load after {trys} trys:\n{link}")
 
@@ -118,8 +112,9 @@ def cutImages(image, prefix):
                 new_x = 0 + int(x/10)
                 new_y = 0 + int(y/10)
                 croppedImage = image[x : x + cropped_width, y : y + cropped_height, :]
-                path = os.path.join("predictedData", f'{prefix}_{new_x}_{new_y}.png')
+                timestamp = datetime.now().timestamp()
+                path = os.path.join("predictedData", f'{prefix}_{new_x}_{new_y}_{timestamp}.png')
                 ret = cv2.imwrite(path, croppedImage)
 
 if __name__ == "__main__":
-    gatherImages()
+    main()
