@@ -164,3 +164,4 @@ metaData.json
 modelHistory.pkl
 myModel.keras
 *.h5
+predictedData/*.png
