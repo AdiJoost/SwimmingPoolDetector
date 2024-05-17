@@ -4,9 +4,11 @@ from tensorflow.keras.models import load_model
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from imageDownloader import gatherImages
 logger = logging.getLogger(__name__)
 
 def main():
+    gatherImages(2752, 2753, 1212, 1213)
     scrapModel("vgg16.h5")
 
 
