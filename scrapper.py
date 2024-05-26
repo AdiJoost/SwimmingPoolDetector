@@ -8,8 +8,8 @@ from imageDownloader import gatherImages
 logger = logging.getLogger(__name__)
 
 def main():
-    gatherImages(2752, 2753, 1212, 1213)
-    scrapModel("vgg16.h5")
+    #gatherImages(2688, 2690, 1220, 1222)
+    scrapModel("vgg16_V2.h5")
 
 
 def scrapModel(modelName):
@@ -52,7 +52,7 @@ def _runThroughPictures(model, modelName):
             filePath = os.path.join(root, filename)
             predictImg(filePath, model, modelName)
 
-def predictImg(filePath, model, modelName, predictionThreashhold=0.7):
+def predictImg(filePath, model, modelName, predictionThreashhold=0.95):
      img = cv2.imread(filePath)
      img = img /255
      img = np.expand_dims(img, axis=0)
