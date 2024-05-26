@@ -6,17 +6,22 @@ from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 from sklearn.model_selection import train_test_split
 from dataGenerator import generateEqualDataSet
 from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.initializers import Constant
 from keras.preprocessing.image import ImageDataGenerator
 import pickle
 
-NUMBER_OF_PICTURES = 114
-
+#Load Data Parameters
+NUMBER_OF_PICTURES = 216
+TRUE_FALSE_RATIO = 0.3
+#Model Parameters
 NODES_AFTER_BASE_MODEL = 64
 
-BATCH_SIZE = 6
+#TrainingParameters
+BATCH_SIZE = 36
 EPOCHS = 2
-CALLBACK = [ModelCheckpoint("vgg16.h5", monitor='accuracy', verbose=1, save_best_only=True, mode='max'),]
+CALLBACK = [ModelCheckpoint("vgg16_V2.h5", monitor='accuracy', verbose=1, save_best_only=True, mode='max'),]
 METRICS =["accuracy"]
+TEST_SIZE = 0.2
 
 #Optimizer
 INITIAL_LEARNING_RATE = 0.001
@@ -36,7 +41,7 @@ VERTICAL_FLIP = True
 
 def main():
     model = getModel()
-    xTrain, xTest, yTrain, ytest = getData(NUMBER_OF_PICTURES)
+    xTrain, xTest, yTrain, ytest = getData(NUMBER_OF_PICTURES, TRUE_FALSE_RATIO)
     datagen = getDataGenerator(xTrain)
     history = trainModel(model, xTrain, yTrain, datagen, batchSize=BATCH_SIZE, epochs=EPOCHS, callback=CALLBACK)
     score = evaluateModel(model, xTest, ytest)
@@ -47,18 +52,20 @@ def getModel():
     baseModel = VGG16(include_top=False, input_shape=(500,500,3))
     baseModel.trainable = False
 
+    outputBias = Constant(TRUE_FALSE_RATIO)
+
     model = Sequential([
         baseModel,
         Flatten(),
         Dense(NODES_AFTER_BASE_MODEL, activation='relu'),
-        Dense(1, activation='sigmoid')
+        Dense(1, activation='sigmoid', bias_initializer=outputBias)
     ])
 
     optimizer = getOptimizer()
 
     model.compile(optimizer=optimizer,
                 loss='binary_crossentropy',
-              metrics=METRICS)
+              metrics=METRICS,)
     
     return model
 
@@ -74,9 +81,9 @@ def getDecay():
         staircase=DECAY_STAIRCASE
     )
 
-def getData(numberOfSamples):
-    X, y = generateEqualDataSet(numberOfSamples)
-    xTrain, xTest, yTrain, ytest = train_test_split(X, y, test_size=0.2)
+def getData(numberOfSamples, trueFalseRatio):
+    X, y = generateEqualDataSet(numberOfSamples, trueFalseRatio)
+    xTrain, xTest, yTrain, ytest = train_test_split(X, y, test_size=TEST_SIZE, stratify=y)
     return xTrain, xTest, yTrain, ytest
 
 def getDataGenerator(xTrain):
