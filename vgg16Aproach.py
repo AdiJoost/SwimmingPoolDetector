@@ -2,7 +2,9 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, RandomFlip, RandomRotation
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.optimizers.schedules import ExponentialDecay
+from tensorflow.keras.losses import BinaryCrossentropy
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
+from tensorflow.keras.metrics import TruePositives, FalsePositives, TrueNegatives, Accuracy
 from sklearn.model_selection import train_test_split
 from dataGenerator import generateEqualDataSet
 from tensorflow.keras.applications.vgg16 import VGG16
@@ -18,9 +20,10 @@ NODES_AFTER_BASE_MODEL = 64
 
 #TrainingParameters
 BATCH_SIZE = 36
-EPOCHS = 2
+EPOCHS = 50
+EPOCHS_AFTER_UNFREEZING = 20
 CALLBACK = [ModelCheckpoint("vgg16_V3.h5", monitor='accuracy', verbose=1, save_best_only=True, mode='max'),]
-METRICS =["accuracy"]
+METRICS =[Accuracy(), TruePositives(), TrueNegatives(), FalsePositives()]
 TEST_SIZE = 0.2
 
 #Optimizer
@@ -44,6 +47,12 @@ def main():
     xTrain, xTest, yTrain, ytest = getData(NUMBER_OF_PICTURES, TRUE_FALSE_RATIO)
     datagen = getDataGenerator(xTrain)
     history = trainModel(model, xTrain, yTrain, datagen, batchSize=BATCH_SIZE, epochs=EPOCHS, callback=CALLBACK)
+    for layer in model.layers[:-4]:
+        layer.trainable = False
+    for layer in model.layers[-4:]:
+        layer.trainable = True
+    trainModel(model, xTrain, yTrain, datagen, batchSize=BATCH_SIZE, epochs=EPOCHS_AFTER_UNFREEZING, callback=CALLBACK)
+
     score = evaluateModel(model, xTest, ytest)
     saveModel(model, "lastModel.h5", history, score)
 
@@ -64,7 +73,7 @@ def getModel():
     optimizer = getOptimizer()
 
     model.compile(optimizer=optimizer,
-                loss='binary_crossentropy',
+                loss= BinaryCrossentropy(),
               metrics=METRICS,)
     
     return model
@@ -98,12 +107,19 @@ def getDataGenerator(xTrain):
     return datagen
 
 def trainModel(model, xTrain, yTrain, datagen, batchSize, epochs, callback=None):
+    classWeights = _getClassWeigths(xTrain)
     history = model.fit(
         datagen.flow(xTrain, yTrain, batch_size=batchSize),
         steps_per_epoch= len(xTrain) / batchSize,
         epochs=epochs,
-        callbacks=callback)
+        callbacks=callback,
+        class_weight = classWeights)
     return history
+
+def _getClassWeigths(xTrain):
+    notPoolWeight = (1 / (1 - TRUE_FALSE_RATIO)) * (len(xTrain) / 2)
+    poolWeight = (1 / (TRUE_FALSE_RATIO)) * (len(xTrain) / 2)
+    return {0: notPoolWeight, 1: poolWeight}
 
 def evaluateModel(model, xTest, yTest):
     score = model.evaluate(xTest, yTest, verbose=0)
