@@ -11,15 +11,15 @@ from keras.preprocessing.image import ImageDataGenerator
 import pickle
 
 #Load Data Parameters
-NUMBER_OF_PICTURES = 216
-TRUE_FALSE_RATIO = 0.3
+NUMBER_OF_PICTURES = 231
+TRUE_FALSE_RATIO = 0.1
 #Model Parameters
 NODES_AFTER_BASE_MODEL = 64
 
 #TrainingParameters
 BATCH_SIZE = 36
 EPOCHS = 2
-CALLBACK = [ModelCheckpoint("vgg16_V2.h5", monitor='accuracy', verbose=1, save_best_only=True, mode='max'),]
+CALLBACK = [ModelCheckpoint("vgg16_V3.h5", monitor='accuracy', verbose=1, save_best_only=True, mode='max'),]
 METRICS =["accuracy"]
 TEST_SIZE = 0.2
 

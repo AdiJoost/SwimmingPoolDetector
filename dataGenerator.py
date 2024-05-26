@@ -5,7 +5,7 @@ import math
 
 def main():
     print(getNumberOfYPictures());
-    X,y = generateEqualDataSet(216, 0.3)
+    X,y = generateEqualDataSet(231, 0.1)
     print(X.shape)
     print(y.shape)
 
@@ -42,6 +42,9 @@ def _getPathToPositivePicture():
             yield os.path.join(root, file)
 
 def _getPathToNegativePicture():
+    for root, dirs, files in os.walk("./notPoolPicturesValidated", topdown=False):
+        for file in files:
+            yield os.path.join(root, file)
     for root, dirs, files in os.walk("./swissimage_annotator/static/data/swimmingpooldetector/n", topdown=False):
         for file in files:
             yield os.path.join(root, file)
