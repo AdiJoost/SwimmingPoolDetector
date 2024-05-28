@@ -22,7 +22,7 @@ NODES_AFTER_BASE_MODEL = 64
 BATCH_SIZE = 36
 EPOCHS = 50
 EPOCHS_AFTER_UNFREEZING = 20
-CALLBACK = [ModelCheckpoint("vgg16_V3.h5", monitor='accuracy', verbose=1, save_best_only=True, mode='max'),]
+CALLBACK = [ModelCheckpoint("vgg16_V5.h5", monitor='accuracy', verbose=1, save_best_only=True, mode='max'),]
 METRICS =[Accuracy(), TruePositives(), TrueNegatives(), FalsePositives()]
 TEST_SIZE = 0.2
 
@@ -66,7 +66,8 @@ def getModel():
     model = Sequential([
         baseModel,
         Flatten(),
-        Dense(NODES_AFTER_BASE_MODEL, activation='relu'),
+        Dense(512, activation='relu'),
+        Dense(128, activation='relu'),
         Dense(1, activation='sigmoid', bias_initializer=outputBias)
     ])
 
