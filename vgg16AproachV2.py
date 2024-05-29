@@ -22,7 +22,7 @@ import imgaug.augmenters as iaa
 
 
 #Load Data Parameters
-NUMBER_OF_PICTURES = 50
+NUMBER_OF_PICTURES = 116
 TRUE_FALSE_RATIO = 0.1
 #Model Parameters
 NODES_AFTER_BASE_MODEL = 64
